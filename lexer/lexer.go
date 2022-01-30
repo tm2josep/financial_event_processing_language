@@ -1,5 +1,9 @@
 package lexer
 
+type Lexer struct {
+	Location int
+}
+
 func (lex Lexer) peek(source string) Token {
 	for _, rule := range rules {
 		loc := rule.expr.FindIndex([]byte(source[lex.Location:]))

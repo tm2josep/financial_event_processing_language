@@ -9,10 +9,6 @@ type rule struct {
 	expr *regexp.Regexp
 }
 
-type Lexer struct {
-	Location int
-}
-
 type Token struct {
 	Name     string
 	Content  string
