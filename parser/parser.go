@@ -2,7 +2,7 @@ package parser
 
 import (
 	"fepl/lexer"
-	"fmt"
+	"strconv"
 )
 
 type Parser struct {
@@ -32,7 +32,7 @@ func (parser *Parser) advance(steps ...int) {
 	}
 }
 
-func (parser *Parser) GetAst(tokens chan lexer.Token) ast {
+func (parser *Parser) GetAst(tokens chan lexer.Token) Ast {
 	parser.pc = 0
 	parser.pt = []lexer.Token{}
 	// Consume all tokens into slice
@@ -40,19 +40,24 @@ func (parser *Parser) GetAst(tokens chan lexer.Token) ast {
 		parser.pt = append(parser.pt, token)
 	}
 
-	ast := ast{
-		kind: "Program",
-		body: []node{},
+	ast := Ast{
+		Kind: "Program",
+		Body: []Node{},
 	}
 
+	var n Node
 	for parser.pc < len(parser.pt) {
-		ast.body = append(ast.body, parser.walk())
+		n = parser.walk()
+		if n.Kind == "" {
+			continue
+		}
+		ast.Body = append(ast.Body, n)
 	}
 
 	return ast
 }
 
-func (parser *Parser) makeBinop(a node) node {
+func (parser *Parser) makeBinop(a Node) Node {
 	token := parser.current()
 	binopKind := ""
 
@@ -73,15 +78,15 @@ func (parser *Parser) makeBinop(a node) node {
 
 	parser.advance()
 	// Recursively build the sides if needed
-	return node{kind: binopKind, body: []node{a, parser.walk()}}
+	return Node{Kind: binopKind, Body: []Node{a, parser.walk()}}
 }
 
-func (parser *Parser) makeExpression() node {
+func (parser *Parser) makeExpression() Node {
 	// Starts with "("
 	parser.advance()
-	n := node{
-		kind: "Expression",
-		body: []node{},
+	n := Node{
+		Kind: "Expression",
+		Body: []Node{},
 	}
 
 	token := parser.current()
@@ -91,82 +96,80 @@ func (parser *Parser) makeExpression() node {
 	token = parser.current()
 	if token.Kind == "BINOP" {
 		// If there is an operator, get the right hand side
-		n.body = append(n.body, parser.makeBinop(a))
+		n.Body = append(n.Body, parser.makeBinop(a))
 	} else {
-		n.body = []node{a}
+		n.Body = []Node{a}
 	}
 
 	return n
 }
 
-func (parser *Parser) allocationStatement() node {
+func (parser *Parser) allocationStatement() Node {
 	// skip alloc keyword
 	parser.advance()
 
-	n := node{
-		kind: "Allocation",
-		body: []node{},
+	n := Node{
+		Kind: "Allocation",
+		Body: []Node{},
 	}
 
 	// get source field
 	rhs := parser.walk()
-	if rhs.kind != "Field" {
+	if rhs.Kind != "Field" {
 		panic("expected allocation field source")
 	}
 
-	n.body = append(n.body, rhs)
+	n.Body = append(n.Body, rhs)
 
 	// get source value
 	valueNode := parser.walk()
 
-	if valueNode.kind != "Expression" && valueNode.kind != "Field" {
+	if valueNode.Kind != "Expression" && valueNode.Kind != "Field" {
 		panic("expected allocation value expression")
 	}
 
-	if valueNode.kind == "Field" {
-		valueNode = node{
-			kind: "Expression",
-			body: []node{valueNode},
+	if valueNode.Kind == "Field" {
+		valueNode = Node{
+			Kind: "Expression",
+			Body: []Node{valueNode},
 		}
 	}
 
-	n.body = append(n.body, valueNode)
+	n.Body = append(n.Body, valueNode)
 
 	// get source field
 	lhs := parser.walk()
 
-	if lhs.kind != "Field" {
+	if lhs.Kind != "Field" {
 		panic("expected allocation field target")
 	}
 
-	n.body = append(n.body, lhs)
+	n.Body = append(n.Body, lhs)
 
 	return n
 }
 
-func (parser *Parser) makeField() node {
+func (parser *Parser) makeField() Node {
 	// skip field start
 	parser.advance()
 
 	// take field name
-	n := node{
-		kind:  "Field",
-		value: parser.current().Content,
+	n := Node{
+		Kind:  "Field",
+		Value: parser.current().Content,
 	}
 
 	// skip field end
 	parser.advance(2)
-	fmt.Println(n)
 	return n
 }
 
-func (parser *Parser) walk() node {
+func (parser *Parser) walk() Node {
 	token := parser.current()
-	fmt.Println(token)
 
 	if token.Kind == "RPAREN" {
 		parser.advance()
-		return parser.walk()
+		return Node{Kind: ""}
 	}
 
 	if token.Kind == "LPAREN" {
@@ -175,12 +178,13 @@ func (parser *Parser) walk() node {
 
 	if token.Kind == "NUMBER" {
 		parser.advance()
-		return node{
-			kind: "Expression",
-			body: []node{
+		fixedValue, _ := strconv.ParseFloat(token.Content, 64)
+		return Node{
+			Kind: "Expression",
+			Body: []Node{
 				{
-					kind:  "NumberLiteral",
-					value: token.Content,
+					Kind:       "NumberLiteral",
+					FixedValue: fixedValue,
 				},
 			},
 		}

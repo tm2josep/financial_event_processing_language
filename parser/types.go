@@ -1,9 +1,10 @@
 package parser
 
-type node struct {
-	kind  string
-	value string
-	body  []node
+type Node struct {
+	Kind       string
+	Value      string
+	FixedValue float64
+	Body       []Node
 }
 
-type ast node
+type Ast Node

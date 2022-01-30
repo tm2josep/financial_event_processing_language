@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fepl/behavior"
 	"fepl/lexer"
 	"fepl/parser"
 	"fmt"
@@ -8,9 +9,10 @@ import (
 
 func main() {
 	lex := new(lexer.Lexer)
-	source := "alloc @'name_one' @'field' @'name_two'"
+	source := "(@'field' + 10)"
 	tokens := make(chan lexer.Token)
 	go lex.Stream(source, tokens)
 	pars := new(parser.Parser)
-	fmt.Println(pars.GetAst(tokens))
+	ast := pars.GetAst(tokens)
+	fmt.Println(behavior.Build(ast))
 }
