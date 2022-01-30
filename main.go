@@ -8,7 +8,7 @@ import (
 
 func main() {
 	lex := new(lexer.Lexer)
-	source := "alloc @'name_one' (500 + 3) @'name_two'"
+	source := "alloc @'name_one' @'field' @'name_two'"
 	tokens := make(chan lexer.Token)
 	go lex.Stream(source, tokens)
 	pars := new(parser.Parser)

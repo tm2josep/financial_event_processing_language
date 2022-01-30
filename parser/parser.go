@@ -18,8 +18,15 @@ func (parser *Parser) current() lexer.Token {
 	return parser.pt[parser.pc]
 }
 
-func (parser *Parser) advance() {
-	parser.pc++
+func (parser *Parser) advance(steps ...int) {
+	if len(steps) == 0 {
+		parser.pc++
+	} else if len(steps) == 1 {
+		parser.pc += steps[0]
+	} else {
+		panic("parser.advance only accepts 0 or 1 arguments")
+	}
+
 	if parser.pc > len(parser.pt) {
 		panic("parser advanced out of range")
 	}
@@ -116,6 +123,13 @@ func (parser *Parser) allocationStatement() node {
 		panic("expected allocation value expression")
 	}
 
+	if valueNode.kind == "Field" {
+		valueNode = node{
+			kind: "Expression",
+			body: []node{valueNode},
+		}
+	}
+
 	n.body = append(n.body, valueNode)
 
 	// get source field
@@ -141,7 +155,7 @@ func (parser *Parser) makeField() node {
 	}
 
 	// skip field end
-	parser.pc += 2
+	parser.advance(2)
 	fmt.Println(n)
 	return n
 }
