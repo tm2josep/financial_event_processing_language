@@ -2,7 +2,7 @@ package lexer
 
 import "regexp"
 
-var rules = [27]rule{
+var rules = []rule{
 	{"WHITESPACE", regexp.MustCompile(`\s`)},
 	{"LPAREN", regexp.MustCompile(`\(`)},
 	{"RPAREN", regexp.MustCompile(`\)`)},
@@ -23,11 +23,6 @@ var rules = [27]rule{
 	{"VAR_START", regexp.MustCompile(`\$`)},
 	{"NAME", regexp.MustCompile(`[A-Za-z]+[0-9A-Za-z\_]+`)},
 	{"EXP", regexp.MustCompile(`\^`)},
-	{"MULT", regexp.MustCompile(`\*`)},
-	{"DIV", regexp.MustCompile(`\/`)},
-	{"ADD", regexp.MustCompile(`\+`)},
-	{"SUB", regexp.MustCompile(`\-`)},
-	{"AND", regexp.MustCompile(`\&`)},
-	{"OR", regexp.MustCompile(`\|`)},
+	{"BINOP", regexp.MustCompile(`[\*\/\+\-\^]`)},
 	{"COMPARATOR", regexp.MustCompile(`(==)|(>=)|(<=)|(>)|(<)}`)},
 }

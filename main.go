@@ -2,14 +2,15 @@ package main
 
 import (
 	"fepl/lexer"
+	"fepl/parser"
 	"fmt"
 )
 
 func main() {
-	var lex = new(lexer.Lexer)
-	source := "alloc @'field_name' 500 @'field_name_2';\n assess @'field_name'"
-	for token := range lex.Stream(source) {
-		fmt.Println(token.Name, token.Location)
-		fmt.Printf("%#v\n", token.Content)
-	}
+	lex := new(lexer.Lexer)
+	source := "alloc @'name_one' (500 + 3) @'name_two'"
+	tokens := make(chan lexer.Token)
+	go lex.Stream(source, tokens)
+	pars := new(parser.Parser)
+	fmt.Println(pars.GetAst(tokens))
 }

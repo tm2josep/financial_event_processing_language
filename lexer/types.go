@@ -10,7 +10,7 @@ type rule struct {
 }
 
 type Token struct {
-	Name     string
+	Kind     string
 	Content  string
 	Location []int
 }

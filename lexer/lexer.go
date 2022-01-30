@@ -21,14 +21,13 @@ func (lex *Lexer) eat(source string) Token {
 	return tokenMatch
 }
 
-func (lex Lexer) Stream(source string) <-chan Token {
-	out := make(chan Token)
-	go func() {
-		for len(source) > lex.Location {
-			token := lex.eat(source)
-			out <- token
+func (lex Lexer) Stream(source string, out chan Token) {
+	for len(source) > lex.Location {
+		token := lex.eat(source)
+		if token.Kind == "WHITESPACE" {
+			continue
 		}
-		close(out)
-	}()
-	return out
+		out <- token
+	}
+	close(out)
 }
