@@ -2,15 +2,19 @@ package main
 
 import (
 	"fepl/lexer"
+	"fepl/parser"
 	"fmt"
 )
 
 func main() {
 	lex := new(lexer.Lexer)
-	source := "(@'field' + 10)"
+	source := "alloc @'claim' 500 @'retained';"
 	tokens := make(chan lexer.Token)
 	go lex.Stream(source, tokens)
-	for token := range tokens {
-		fmt.Println(token)
+	rootNode := parser.Parse(tokens)
+	nodes := make(chan parser.Node)
+	go rootNode.Walk(nodes)
+	for child := range nodes {
+		fmt.Println(child.Kind)
 	}
 }

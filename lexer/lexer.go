@@ -22,6 +22,7 @@ func (lex *Lexer) eat(source string) Token {
 }
 
 func (lex Lexer) Stream(source string, out chan Token) {
+	defer close(out)
 	for len(source) > lex.Location {
 		token := lex.eat(source)
 		if token.Kind == "WHITESPACE" {
@@ -29,5 +30,4 @@ func (lex Lexer) Stream(source string, out chan Token) {
 		}
 		out <- token
 	}
-	close(out)
 }
