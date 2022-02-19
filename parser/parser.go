@@ -2,13 +2,14 @@ package parser
 
 import (
 	"fepl/lexer"
+	"fmt"
 	"reflect"
 )
 
 type Parser struct {
-	position int
-	tokens   []lexer.Token
-	rules    []rule
+	root   *Node
+	tokens []lexer.Token
+	rules  []rule
 }
 
 type rule struct {
@@ -18,7 +19,7 @@ type rule struct {
 
 type Node struct {
 	Kind       string
-	token      lexer.Token
+	Token      lexer.Token
 	ChildNodes []*Node
 }
 
@@ -44,7 +45,7 @@ func Parse(tokens chan lexer.Token) Node {
 	return parser.resolve()
 }
 
-func (rule *rule) matches(nodes []Node) bool {
+func (rule *rule) matches(nodes []*Node) bool {
 	nodeKinds := []string{}
 	for _, node := range nodes {
 		nodeKinds = append(nodeKinds, node.Kind)
@@ -54,38 +55,13 @@ func (rule *rule) matches(nodes []Node) bool {
 	return matches
 }
 
-func (parser *Parser) resolve() Node {
-	// Convert token list into node list
-	nodeList := []Node{}
-	for _, token := range parser.tokens {
-		nodeList = append(nodeList, Node{token.Kind, token, []*Node{}})
+func printMatch(name string, nodeList []*Node) {
+	fmt.Print(len(nodeList), " ")
+	for _, n := range nodeList {
+		fmt.Print(n.Kind + " ")
 	}
-
-	// Scan over nodes to match rules, resolving until one root node
-mainloop:
-	for len(nodeList) > 1 {
-		for i := 0; i < len(nodeList); i++ {
-			for j := i + 1; j <= len(nodeList); j++ {
-				for _, rule := range parser.rules {
-
-					match := rule.matches(nodeList[i:j])
-					if match {
-						node := Node{rule.name, lexer.Token{}, []*Node{}}
-						for _, n := range nodeList {
-							node.ChildNodes = append(node.ChildNodes, &n)
-						}
-						temp := append(nodeList[:i], node)
-						temp = append(temp, nodeList[j:]...)
-						nodeList = temp
-
-						continue mainloop
-					}
-				}
-			}
-		}
-	}
-
-	return nodeList[0]
+	fmt.Print("---> " + name)
+	fmt.Print("\n")
 }
 
 func (n *Node) descend(out chan Node) {
@@ -98,4 +74,43 @@ func (n *Node) descend(out chan Node) {
 func (n *Node) Walk(out chan Node) {
 	n.descend(out)
 	close(out)
+}
+
+func (parser *Parser) resolve() Node {
+	nodes := []*Node{}
+	for _, token := range parser.tokens {
+		nodes = append(nodes, &Node{token.Kind, token, []*Node{}})
+	}
+
+mainloop:
+	for len(nodes) > 1 {
+		for i := 0; i < len(nodes); i++ {
+			for _, rule := range parser.rules {
+				for p := 0; p <= len(rule.expressions); p++ {
+					j := i + p
+					match := rule.matches(nodes[i:j])
+					if !match {
+						continue
+					}
+
+					children := nodes[i:j]
+
+					printMatch(rule.name, children)
+
+					node := &Node{rule.name, lexer.Token{}, children}
+					temp := []*Node{}
+
+					temp = append(temp, nodes[:i]...)
+					temp = append(temp, node)
+					temp = append(temp, nodes[j:]...)
+
+					nodes = temp
+
+					continue mainloop
+				}
+			}
+		}
+	}
+
+	return *nodes[0]
 }

@@ -14,7 +14,7 @@ func main() {
 	rootNode := parser.Parse(tokens)
 	nodes := make(chan parser.Node)
 	go rootNode.Walk(nodes)
-	for child := range nodes {
-		fmt.Println(child.Kind)
+	for node := range nodes {
+		fmt.Println(node.Kind)
 	}
 }
