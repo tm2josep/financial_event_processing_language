@@ -21,7 +21,7 @@ func generateLosses(out chan map[string]interface{}) {
 
 func main() {
 	lex := new(lexer.Lexer)
-	source := "aggregate @'company_name' @'claim':sum @'retained':sum @'retained':sum;"
+	source := "aggregate @'company_name' @'claim':sum @'retained':sum @'retained':sum;\n"
 	source += "alloc @'claim' 500 @'retained';"
 	tokens := make(chan lexer.Token)
 	go lex.Stream(source, tokens)
@@ -37,6 +37,11 @@ func main() {
 		}
 		fmt.Println(branch.Node.Kind)
 	}
+
+	//TODO: Implement "compiler"
+	//TODO: Create test cases for lexer and parser
+	//TODO: Create all behavior nodes
+	//TODO: Create test cases for the behavior nodes
 
 	// allocation := behavior.Allocation{
 	// 	Source: behavior.Field{Name: "claim"},
