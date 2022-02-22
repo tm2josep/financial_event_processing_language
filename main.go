@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fepl/behavior"
 	"fepl/lexer"
 	"fepl/parser"
 	"fmt"
@@ -22,30 +21,37 @@ func generateLosses(out chan map[string]interface{}) {
 
 func main() {
 	lex := new(lexer.Lexer)
-	source := "alloc @'claim' 500 @'retained';"
+	source := "aggregate @'company_name' @'claim':sum @'retained':sum @'retained':sum;"
+	source += "alloc @'claim' 500 @'retained';"
 	tokens := make(chan lexer.Token)
 	go lex.Stream(source, tokens)
-	rootNode := parser.Parse(tokens)
-	nodes := make(chan parser.Node)
-	go rootNode.Walk(nodes)
-	for node := range nodes {
-		fmt.Println(node.Kind)
+	rootNode, err := parser.Parse(tokens)
+	if err != nil {
+		panic(err)
 	}
-
-	allocation := behavior.Allocation{
-		Source: behavior.Field{Name: "claim"},
-		Value:  &behavior.TermValue{CurrentValue: 500},
-		Target: behavior.Field{Name: "retained"},
-	}
-
-	losses := make(chan map[string]interface{})
-	go generateLosses(losses)
-	for loss := range losses {
-		fmt.Println("Before -", "Claim:", loss["claim"], "Retained:", loss["retained"])
-		newLoss, err := allocation.Apply(loss)
-		if err != nil {
-			panic(err)
+	nodeTree := make(chan parser.NodeWalk)
+	go rootNode.Walk(nodeTree)
+	for branch := range nodeTree {
+		for i := 0; i < branch.Depth; i++ {
+			fmt.Print("---|")
 		}
-		fmt.Println("After  -", "Claim:", newLoss["claim"], "Retained:", newLoss["retained"])
+		fmt.Println(branch.Node.Kind)
 	}
+
+	// allocation := behavior.Allocation{
+	// 	Source: behavior.Field{Name: "claim"},
+	// 	Value:  &behavior.TermValue{CurrentValue: 500},
+	// 	Target: behavior.Field{Name: "retained"},
+	// }
+
+	// losses := make(chan map[string]interface{})
+	// go generateLosses(losses)
+	// for loss := range losses {
+	// 	fmt.Println("Before -", "Claim:", loss["claim"], "Retained:", loss["retained"])
+	// 	newLoss, err := allocation.Apply(loss)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	fmt.Println("After  -", "Claim:", newLoss["claim"], "Retained:", newLoss["retained"])
+	// }
 }
