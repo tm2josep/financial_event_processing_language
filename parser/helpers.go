@@ -1,6 +1,9 @@
 package parser
 
-import "unicode"
+import (
+	"fmt"
+	"unicode"
+)
 
 func IsUpper(s string) bool {
 	for _, r := range s {
@@ -18,4 +21,13 @@ func IsLower(s string) bool {
 		}
 	}
 	return true
+}
+
+func printMatch(name string, nodeList []*Node) {
+	fmt.Print(len(nodeList), " ")
+	for _, n := range nodeList {
+		fmt.Print(n.Kind + " ")
+	}
+	fmt.Print("---> " + name)
+	fmt.Print("\n")
 }

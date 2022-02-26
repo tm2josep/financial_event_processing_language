@@ -14,16 +14,6 @@ type Allocation struct {
 	Target Field
 }
 
-func max(x ...float64) float64 {
-	best := x[0]
-	for _, v := range x {
-		if v > best {
-			best = v
-		}
-	}
-	return best
-}
-
 func min(x ...float64) float64 {
 	best := x[0]
 	for _, v := range x[0:] {

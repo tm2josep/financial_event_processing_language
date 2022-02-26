@@ -3,7 +3,6 @@ package parser
 import (
 	"errors"
 	"fepl/lexer"
-	"fmt"
 	"reflect"
 )
 
@@ -29,17 +28,14 @@ type NodeWalk struct {
 	Depth int
 }
 
-func setup() Parser {
+func setup(tokens chan lexer.Token) Parser {
 	parser := new(Parser)
-	parser.addRule(rule{"block", []string{"block", "statement"}})
-	parser.addRule(rule{"block", []string{"statement"}})
-	parser.addRule(rule{"statement", []string{"AGGREGATE", "field", "agg_fields", "EOL"}})
-	parser.addRule(rule{"statement", []string{"ALLOC", "field", "value", "field", "EOL"}})
-	parser.addRule(rule{"field", []string{"FIELD_START", "NAME", "FIELD_END"}})
-	parser.addRule(rule{"agg_field", []string{"field", "AGG_MODE"}})
-	parser.addRule(rule{"agg_fields", []string{"agg_fields", "agg_field"}})
-	parser.addRule(rule{"agg_fields", []string{"agg_field"}})
-	parser.addRule(rule{"value", []string{"NUMBER"}})
+	for _, rule := range rules {
+		parser.addRule(rule)
+	}
+	for token := range tokens {
+		parser.tokens = append(parser.tokens, token)
+	}
 	return *parser
 }
 
@@ -48,10 +44,7 @@ func (parser *Parser) addRule(rule rule) {
 }
 
 func Parse(tokens chan lexer.Token) (Node, error) {
-	parser := setup()
-	for token := range tokens {
-		parser.tokens = append(parser.tokens, token)
-	}
+	parser := setup(tokens)
 	return parser.resolve()
 }
 
@@ -63,15 +56,6 @@ func (rule *rule) matches(nodes []*Node) bool {
 	// zip
 	matches := reflect.DeepEqual(rule.expressions, nodeKinds)
 	return matches
-}
-
-func printMatch(name string, nodeList []*Node) {
-	fmt.Print(len(nodeList), " ")
-	for _, n := range nodeList {
-		fmt.Print(n.Kind + " ")
-	}
-	fmt.Print("---> " + name)
-	fmt.Print("\n")
 }
 
 func (n *Node) descend(out chan NodeWalk, depth int) {
@@ -89,6 +73,20 @@ func (n *Node) Walk(out chan NodeWalk) {
 	close(out)
 }
 
+func (rule *rule) collapse(children []*Node) (*Node, error) {
+	match := rule.matches(children)
+	if !match {
+		err := errors.New("rule doesn't match")
+		return &Node{}, err
+	}
+
+	// printMatch(rule.name, children)
+
+	node := &Node{rule.name, lexer.Token{}, children}
+
+	return node, nil
+}
+
 func (parser *Parser) collapse(nodes []*Node) ([]*Node, error) {
 	for i := 0; i < len(nodes); i++ {
 		for _, rule := range parser.rules {
@@ -98,19 +96,13 @@ func (parser *Parser) collapse(nodes []*Node) ([]*Node, error) {
 					continue
 				}
 
-				match := rule.matches(nodes[i:j])
-				if !match {
+				node, err := rule.collapse(nodes[i:j])
+
+				if err != nil {
 					continue
 				}
 
-				children := nodes[i:j]
-
-				printMatch("", nodes)
-				printMatch(rule.name, children)
-
-				node := &Node{rule.name, lexer.Token{}, children}
 				temp := []*Node{}
-
 				temp = append(temp, nodes[:i]...)
 				temp = append(temp, node)
 				temp = append(temp, nodes[j:]...)

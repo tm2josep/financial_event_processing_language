@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fepl/behavior"
 	"fepl/lexer"
 	"fepl/parser"
-	"fmt"
 	"math/rand"
 )
 
@@ -22,7 +22,7 @@ func generateLosses(out chan map[string]interface{}) {
 func main() {
 	lex := new(lexer.Lexer)
 	source := "aggregate @'company_name' @'claim':sum @'retained':sum @'retained':sum;\n"
-	source += "alloc @'claim' 500 @'retained';"
+	source += "alloc @'claim' ((@'revenue') + 10) @'retained';"
 	tokens := make(chan lexer.Token)
 	go lex.Stream(source, tokens)
 	rootNode, err := parser.Parse(tokens)
@@ -31,12 +31,14 @@ func main() {
 	}
 	nodeTree := make(chan parser.NodeWalk)
 	go rootNode.Walk(nodeTree)
-	for branch := range nodeTree {
-		for i := 0; i < branch.Depth; i++ {
-			fmt.Print("---|")
-		}
-		fmt.Println(branch.Node.Kind)
-	}
+	builder := new(behavior.Builder)
+	builder.Build(nodeTree)
+	// for branch := range nodeTree {
+	// 	for i := 0; i < branch.Depth; i++ {
+	// 		fmt.Print("---|")
+	// 	}
+	// 	fmt.Println(branch.Node.Kind)
+	// }
 
 	//TODO: Implement "compiler"
 	//TODO: Create test cases for lexer and parser
